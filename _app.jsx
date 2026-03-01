@@ -151,16 +151,41 @@ const STATUS = {
   vendido:    { label:"Vendido",    color:"#ef4444", bg:"#fee2e2", text:"#991b1b" },
 };
 
-const STORAGE_KEY = "terdemol-lots-v1";
+const STORAGE_KEY   = "terdemol-lots-v1";
+const FIRESTORE_DOC = "terdemol/lots";
 
-function loadLots() {
+// Devuelve true si Firebase está inicializado con una config real
+function firebaseReady() {
+  const cfg = window.__FIREBASE_CONFIG;
+  return cfg && cfg.apiKey && cfg.apiKey !== "PEGAR-AQUI" && typeof firebase !== "undefined";
+}
+
+async function loadLots() {
+  if (firebaseReady()) {
+    try {
+      const snap = await firebase.firestore().doc(FIRESTORE_DOC).get();
+      if (snap.exists) return snap.data().lots || null;
+      return null; // documento aún vacío
+    } catch(e) {
+      console.warn("Firestore no disponible, usando localStorage:", e.message);
+    }
+  }
+  // Fallback localStorage
   try {
     const v = localStorage.getItem(STORAGE_KEY);
     return v ? JSON.parse(v) : null;
   } catch { return null; }
 }
 
-function saveLots(data) {
+async function saveLots(data) {
+  if (firebaseReady()) {
+    try {
+      await firebase.firestore().doc(FIRESTORE_DOC).set({ lots: data });
+      return;
+    } catch(e) {
+      console.warn("Firestore no disponible, guardando en localStorage:", e.message);
+    }
+  }
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
 
@@ -773,15 +798,30 @@ function VentasView({ lots, onSaveLot }) {
 // ─── APP PRINCIPAL ────────────────────────────────────────────────────────────
 function App() {
   const [tab, setTab] = useState("mapa");
-  const [lots, setLots] = useState(() => loadLots() || buildInitialState());
+  const [lots, setLots] = useState(null); // null = cargando
+
+  useEffect(() => {
+    loadLots().then(saved => setLots(saved || buildInitialState()));
+  }, []);
 
   const handleSaveLot = (lotId, form) => {
     setLots(prev => {
       const next = { ...prev, [lotId]: form };
-      saveLots(next);
+      saveLots(next); // async, no bloquea la UI
       return next;
     });
   };
+
+  if (!lots) return (
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#0f172a" }}>
+      <div style={{ textAlign:"center" }}>
+        <div style={{ fontSize:40, marginBottom:12 }}>🏘️</div>
+        <div style={{ fontWeight:700, color:"#94a3b8", fontFamily:"sans-serif", fontSize:14 }}>
+          Conectando a la base de datos...
+        </div>
+      </div>
+    </div>
+  );
 
   const tabStyle = (active) => ({
     flex:1, padding:"14px 8px", border:"none", cursor:"pointer",

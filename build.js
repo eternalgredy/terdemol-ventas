@@ -26,7 +26,38 @@ const planoAssignment = planoLine.trim().replace("const PLANO_IMG", "window.__PL
 // 2. Leer el código de la app
 const appCode = fs.readFileSync(path.join(dir, "_app.jsx"), "utf8");
 
-// 3. Construir el HTML final
+// 3. Leer firebase-config.js (si existe y tiene valores reales)
+const firebaseConfigPath = path.join(dir, "firebase-config.js");
+let firebaseConfigCode = "";
+let firebaseReady = false;
+if (fs.existsSync(firebaseConfigPath)) {
+  firebaseConfigCode = fs.readFileSync(firebaseConfigPath, "utf8");
+  firebaseReady = !firebaseConfigCode.includes("PEGAR-AQUI");
+}
+
+const firebaseScripts = `
+  <!-- Firebase 10 compat (Firestore) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>`;
+
+const firebaseInitBlock = firebaseReady
+  ? `<!-- Firebase config + inicialización -->
+<script>
+${firebaseConfigCode}
+if (window.__FIREBASE_CONFIG) {
+  firebase.initializeApp(window.__FIREBASE_CONFIG);
+}
+</script>`
+  : `<!-- firebase-config.js no configurado aún — usando localStorage como fallback -->
+<script>
+window.__FIREBASE_CONFIG = null;
+</script>`;
+
+const storageStatus = firebaseReady
+  ? "☁️  Firebase Firestore configurado"
+  : "⚠️   Firebase no configurado → datos en localStorage (solo este dispositivo)";
+
+// 4. Construir el HTML final
 const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -35,7 +66,7 @@ const html = `<!DOCTYPE html>
   <meta name="description" content="Urb. Terdemol Santivañez — Control de Ventas de Lotes">
   <title>Urb. Terdemol · Santivañez</title>
 
-  <!-- React 18 -->
+  <!-- React 18 -->${firebaseScripts}
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <!-- Babel para JSX en navegador -->
@@ -65,12 +96,15 @@ const html = `<!DOCTYPE html>
   </div>
 </div>
 
-<!-- Script 1: imagen del plano (no necesita transpilación Babel) -->
+<!-- Script 1: imagen del plano -->
 <script>
 ${planoAssignment}
 </script>
 
-<!-- Script 2: app React+JSX (transpilada por Babel en el navegador) -->
+<!-- Script 2: Firebase config -->
+${firebaseInitBlock}
+
+<!-- Script 3: app React+JSX (transpilada por Babel en el navegador) -->
 <script type="text/babel" data-presets="react">
 ${appCode}
 </script>
@@ -78,7 +112,7 @@ ${appCode}
 </body>
 </html>`;
 
-// 4. Escribir el archivo
+// 5. Escribir el archivo
 const outPath = path.join(dir, "index.html");
 fs.writeFileSync(outPath, html, "utf8");
 
@@ -86,6 +120,15 @@ const sizeKB = Math.round(fs.statSync(outPath).size / 1024);
 console.log("✅  index.html generado correctamente");
 console.log("    Tamaño: " + sizeKB + " KB");
 console.log("    Ruta:   " + outPath);
+console.log("    Storage: " + storageStatus);
 console.log("");
+if (!firebaseReady) {
+  console.log("⚠️  Para activar la base de datos en la nube:");
+  console.log("    1. Crea un proyecto en https://console.firebase.google.com");
+  console.log("    2. Activa Firestore Database");
+  console.log("    3. Rellena firebase-config.js con tus credenciales");
+  console.log("    4. Ejecuta node build.js de nuevo");
+  console.log("");
+}
 console.log("👉  Para abrirlo: doble clic en index.html");
 console.log("👉  Para regenerar después de cambios: node build.js");
