@@ -27,10 +27,10 @@
  */
 
 window.__FIREBASE_CONFIG = {
-  apiKey:            "PEGAR-AQUI",
-  authDomain:        "PEGAR-AQUI.firebaseapp.com",
-  projectId:         "PEGAR-AQUI",
-  storageBucket:     "PEGAR-AQUI.firebasestorage.app",
-  messagingSenderId: "PEGAR-AQUI",
-  appId:             "PEGAR-AQUI"
+  apiKey:            "AIzaSyDIS85Jshf6_hs9dQlrAq3v1F99b2VkDnQ",
+  authDomain:        "tioayuda-eadb2.firebaseapp.com",
+  projectId:         "tioayuda-eadb2",
+  storageBucket:     "tioayuda-eadb2.firebasestorage.app",
+  messagingSenderId: "205060998133",
+  appId:             "1:205060998133:web:1d9088cb1c8f7d3e2416bc"
 };
