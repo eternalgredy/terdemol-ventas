@@ -1,0 +1,825 @@
+// La imagen del plano es inyectada por build.js via window.__PLANO_IMG
+const PLANO_IMG = window.__PLANO_IMG;
+const { useState, useEffect } = React;
+
+// ─── DATOS COMPARTIDOS ────────────────────────────────────────────────────────
+const MANZANAS_INIT = {
+  A: [
+    { id:"A-01", sup:316.28 },{ id:"A-02", sup:300.00 },{ id:"A-03", sup:300.00 },
+    { id:"A-04", sup:300.00 },{ id:"A-05", sup:300.00 },{ id:"A-06", sup:300.00 },
+    { id:"A-07", sup:300.00 },{ id:"A-08", sup:300.00 },{ id:"A-09", sup:300.00 },
+    { id:"A-10", sup:300.00 },{ id:"A-11", sup:300.00 },{ id:"A-12", sup:300.00 },
+    { id:"A-13", sup:300.00 },{ id:"A-14", sup:300.00 },{ id:"A-15", sup:300.00 },
+    { id:"A-16", sup:300.00 },
+  ],
+  B: [
+    { id:"B-01", sup:300.00 },{ id:"B-02", sup:300.00 },{ id:"B-03", sup:300.00 },
+    { id:"B-04", sup:300.00 },{ id:"B-05", sup:300.00 },{ id:"B-06", sup:300.00 },
+    { id:"B-07", sup:300.00 },{ id:"B-08", sup:300.00 },{ id:"B-09", sup:300.00 },
+    { id:"B-10", sup:300.00 },{ id:"B-11", sup:300.00 },{ id:"B-12", sup:300.00 },
+    { id:"B-13", sup:300.00 },{ id:"B-14", sup:300.00 },{ id:"B-15", sup:300.00 },
+    { id:"B-16", sup:300.00 },{ id:"B-17", sup:300.00 },{ id:"B-18", sup:300.00 },
+  ],
+  C: [
+    { id:"C-01", sup:300.00 },{ id:"C-02", sup:300.00 },{ id:"C-03", sup:300.00 },
+    { id:"C-04", sup:300.00 },{ id:"C-05", sup:300.00 },{ id:"C-06", sup:300.00 },
+    { id:"C-07", sup:300.00 },{ id:"C-08", sup:300.00 },{ id:"C-09", sup:299.96 },
+    { id:"C-10", sup:300.00 },{ id:"C-11", sup:300.00 },{ id:"C-12", sup:300.00 },
+    { id:"C-13", sup:300.00 },{ id:"C-14", sup:300.00 },{ id:"C-15", sup:300.00 },
+    { id:"C-16", sup:300.00 },{ id:"C-17", sup:300.00 },{ id:"C-18", sup:300.00 },
+    { id:"C-19", sup:300.00 },{ id:"C-20", sup:300.00 },{ id:"C-21", sup:300.00 },
+    { id:"C-22", sup:300.00 },{ id:"C-23", sup:300.00 },{ id:"C-24", sup:300.00 },
+  ],
+  D: [
+    { id:"D-01", sup:300.00 },{ id:"D-02", sup:300.00 },{ id:"D-03", sup:325.12 },
+    { id:"D-04", sup:332.98 },{ id:"D-05", sup:300.00 },{ id:"D-06", sup:300.00 },
+    { id:"D-07", sup:300.00 },{ id:"D-08", sup:300.00 },{ id:"D-09", sup:300.00 },
+    { id:"D-10", sup:300.00 },{ id:"D-11", sup:300.00 },{ id:"D-12", sup:300.00 },
+    { id:"D-13", sup:300.00 },{ id:"D-14", sup:280.00 },
+  ],
+  E: [
+    { id:"E-01", sup:350.61 },{ id:"E-02", sup:300.00 },{ id:"E-03", sup:300.00 },
+    { id:"E-04", sup:300.00 },{ id:"E-05", sup:300.00 },{ id:"E-06", sup:300.00 },
+    { id:"E-07", sup:300.00 },{ id:"E-08", sup:300.00 },{ id:"E-09", sup:300.00 },
+    { id:"E-10", sup:300.00 },{ id:"E-11", sup:296.67 },{ id:"E-12", sup:300.00 },
+    { id:"E-13", sup:294.44 },
+  ],
+  F: [
+    { id:"F-01", sup:300.00 },{ id:"F-02", sup:300.00 },{ id:"F-03", sup:300.00 },
+    { id:"F-04", sup:300.00 },{ id:"F-05", sup:376.58 },{ id:"F-06", sup:341.30 },
+    { id:"F-07", sup:303.80 },{ id:"F-08", sup:351.25 },{ id:"F-09", sup:265.79 },
+    { id:"F-10", sup:291.12 },{ id:"F-11", sup:280.00 },
+  ],
+  G: [
+    { id:"G-01", sup:309.71 },{ id:"G-02", sup:300.00 },{ id:"G-03", sup:300.00 },
+    { id:"G-04", sup:498.40 },{ id:"G-05", sup:300.00 },{ id:"G-06", sup:300.00 },
+    { id:"G-07", sup:300.00 },{ id:"G-08", sup:300.00 },{ id:"G-09", sup:300.00 },
+    { id:"G-10", sup:300.00 },{ id:"G-11", sup:300.00 },
+  ],
+  H: [
+    { id:"H-01", sup:494.09 },{ id:"H-02", sup:300.00 },{ id:"H-03", sup:300.00 },
+    { id:"H-04", sup:300.00 },{ id:"H-05", sup:300.00 },{ id:"H-06", sup:300.00 },
+    { id:"H-07", sup:300.00 },{ id:"H-08", sup:300.00 },{ id:"H-09", sup:300.00 },
+    { id:"H-10", sup:300.00 },{ id:"H-11", sup:300.00 },{ id:"H-12", sup:300.00 },
+    { id:"H-13", sup:429.76 },
+  ],
+  I: [
+    { id:"I-01", sup:300.00 },{ id:"I-02", sup:300.00 },{ id:"I-03", sup:300.00 },
+    { id:"I-04", sup:300.00 },{ id:"I-05", sup:300.00 },{ id:"I-06", sup:300.00 },
+    { id:"I-07", sup:300.00 },{ id:"I-08", sup:300.00 },{ id:"I-09", sup:300.00 },
+    { id:"I-10", sup:300.00 },{ id:"I-11", sup:300.00 },{ id:"I-12", sup:300.00 },
+    { id:"I-13", sup:300.00 },
+  ],
+  J: [
+    { id:"J-01", sup:401.82 },{ id:"J-02", sup:300.00 },{ id:"J-03", sup:300.00 },
+    { id:"J-04", sup:364.66 },{ id:"J-05", sup:342.19 },{ id:"J-06", sup:365.77 },
+    { id:"J-07", sup:327.42 },
+  ],
+  K: [
+    { id:"K-01", sup:310.54 },{ id:"K-02", sup:301.28 },{ id:"K-03", sup:290.20 },
+    { id:"K-04", sup:300.33 },{ id:"K-05", sup:301.94 },{ id:"K-06", sup:295.66 },
+    { id:"K-07", sup:289.63 },{ id:"K-08", sup:300.05 },{ id:"K-09", sup:307.58 },
+    { id:"K-10", sup:330.93 },{ id:"K-11", sup:310.27 },{ id:"K-12", sup:300.00 },
+    { id:"K-13", sup:300.00 },{ id:"K-14", sup:300.09 },
+  ],
+  L: [
+    { id:"L-01", sup:332.18 },{ id:"L-02", sup:350.53 },{ id:"L-03", sup:337.15 },
+    { id:"L-04", sup:325.06 },{ id:"L-05", sup:363.21 },{ id:"L-06", sup:320.04 },
+    { id:"L-07", sup:320.00 },{ id:"L-08", sup:307.83 },
+  ],
+  M: [
+    { id:"M-01", sup:332.09 },{ id:"M-02", sup:330.75 },{ id:"M-03", sup:322.37 },
+    { id:"M-04", sup:318.07 },{ id:"M-05", sup:313.78 },{ id:"M-06", sup:342.98 },
+    { id:"M-07", sup:304.50 },{ id:"M-08", sup:304.50 },{ id:"M-09", sup:300.58 },
+    { id:"M-10", sup:278.82 },{ id:"M-11", sup:304.50 },{ id:"M-12", sup:304.50 },
+    { id:"M-13", sup:304.50 },{ id:"M-14", sup:304.50 },{ id:"M-15", sup:304.50 },
+    { id:"M-16", sup:307.83 },{ id:"M-17", sup:304.50 },{ id:"M-18", sup:304.50 },
+  ],
+  N: [
+    { id:"N-01", sup:366.33 },{ id:"N-02", sup:305.00 },{ id:"N-03", sup:305.00 },
+    { id:"N-04", sup:305.00 },{ id:"N-05", sup:305.00 },{ id:"N-06", sup:312.39 },
+    { id:"N-07", sup:300.00 },{ id:"N-08", sup:300.00 },{ id:"N-09", sup:300.00 },
+    { id:"N-10", sup:315.31 },{ id:"N-11", sup:300.00 },{ id:"N-12", sup:365.41 },
+    { id:"N-13", sup:319.44 },{ id:"N-14", sup:320.31 },
+  ],
+  O: [
+    { id:"O-01", sup:309.67 },{ id:"O-02", sup:339.84 },{ id:"O-03", sup:332.40 },
+    { id:"O-04", sup:325.06 },{ id:"O-05", sup:363.21 },{ id:"O-06", sup:300.47 },
+    { id:"O-07", sup:300.45 },{ id:"O-08", sup:300.42 },{ id:"O-09", sup:300.77 },
+    { id:"O-10", sup:304.88 },{ id:"O-11", sup:301.73 },{ id:"O-12", sup:302.42 },
+    { id:"O-13", sup:300.47 },
+  ],
+  P: [
+    { id:"P-01", sup:301.08 },{ id:"P-02", sup:301.34 },{ id:"P-03", sup:315.88 },
+    { id:"P-04", sup:300.00 },{ id:"P-05", sup:300.00 },{ id:"P-06", sup:300.00 },
+    { id:"P-07", sup:321.65 },{ id:"P-08", sup:332.35 },{ id:"P-09", sup:300.00 },
+    { id:"P-10", sup:300.00 },{ id:"P-11", sup:300.00 },{ id:"P-12", sup:300.42 },
+    { id:"P-13", sup:304.97 },{ id:"P-14", sup:301.35 },{ id:"P-15", sup:300.73 },
+    { id:"P-16", sup:301.06 },{ id:"P-17", sup:300.90 },{ id:"P-18", sup:301.23 },
+  ],
+  Q: [
+    { id:"Q-01", sup:322.50 },{ id:"Q-02", sup:322.50 },{ id:"Q-03", sup:322.50 },
+    { id:"Q-04", sup:322.50 },{ id:"Q-05", sup:322.50 },{ id:"Q-06", sup:322.50 },
+    { id:"Q-07", sup:322.50 },{ id:"Q-08", sup:324.32 },{ id:"Q-09", sup:317.50 },
+    { id:"Q-10", sup:349.80 },{ id:"Q-11", sup:338.00 },{ id:"Q-12", sup:322.50 },
+    { id:"Q-13", sup:322.50 },{ id:"Q-14", sup:322.50 },{ id:"Q-15", sup:424.08 },
+  ],
+  R: [
+    { id:"R-01", sup:285.13 },{ id:"R-02", sup:285.13 },{ id:"R-03", sup:300.00 },
+    { id:"R-04", sup:300.00 },{ id:"R-05", sup:288.96 },{ id:"R-06", sup:300.00 },
+    { id:"R-07", sup:300.00 },{ id:"R-08", sup:288.59 },{ id:"R-09", sup:300.00 },
+    { id:"R-10", sup:300.00 },{ id:"R-11", sup:300.00 },{ id:"R-12", sup:300.00 },
+    { id:"R-13", sup:300.00 },{ id:"R-14", sup:300.00 },{ id:"R-15", sup:300.00 },
+    { id:"R-16", sup:300.00 },{ id:"R-17", sup:300.00 },{ id:"R-18", sup:300.00 },
+    { id:"R-19", sup:300.00 },{ id:"R-20", sup:300.00 },{ id:"R-21", sup:300.00 },
+    { id:"R-25", sup:300.00 },{ id:"R-26", sup:300.00 },{ id:"R-27", sup:369.13 },
+    { id:"R-28", sup:300.00 },
+  ],
+  S: [
+    { id:"S-01", sup:365.39 },{ id:"S-02", sup:326.67 },{ id:"S-03", sup:322.37 },
+    { id:"S-04", sup:317.29 },{ id:"S-05", sup:309.45 },{ id:"S-06", sup:300.01 },
+    { id:"S-07", sup:300.00 },{ id:"S-08", sup:325.71 },{ id:"S-09", sup:323.67 },
+    { id:"S-10", sup:323.72 },{ id:"S-11", sup:323.62 },{ id:"S-12", sup:339.90 },
+    { id:"S-13", sup:300.00 },{ id:"S-14", sup:300.00 },{ id:"S-15", sup:280.00 },
+    { id:"S-16", sup:280.00 },
+  ],
+};
+
+const STATUS = {
+  disponible: { label:"Disponible", color:"#22c55e", bg:"#dcfce7", text:"#166534" },
+  reservado:  { label:"Reservado",  color:"#f59e0b", bg:"#fef3c7", text:"#92400e" },
+  vendido:    { label:"Vendido",    color:"#ef4444", bg:"#fee2e2", text:"#991b1b" },
+};
+
+const STORAGE_KEY = "terdemol-lots-v1";
+
+function loadLots() {
+  try {
+    const v = localStorage.getItem(STORAGE_KEY);
+    return v ? JSON.parse(v) : null;
+  } catch { return null; }
+}
+
+function saveLots(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+}
+
+function buildInitialState() {
+  const state = {};
+  Object.values(MANZANAS_INIT).flat().forEach(lot => {
+    state[lot.id] = { status:"disponible", comprador:"", precio:"", nota:"" };
+  });
+  return state;
+}
+
+// ─── HELPERS MAPA ─────────────────────────────────────────────────────────────
+function getMzaStats(mza, lots) {
+  const lotes = MANZANAS_INIT[mza];
+  const total = lotes.length;
+  const vendidos = lotes.filter(l => lots[l.id]?.status === "vendido").length;
+  const reservados = lotes.filter(l => lots[l.id]?.status === "reservado").length;
+  const disponibles = total - vendidos - reservados;
+  const pctVendido = total > 0 ? Math.round((vendidos / total) * 100) : 0;
+  return { total, vendidos, reservados, disponibles, pctVendido };
+}
+
+function getMzaColor(stats) {
+  const { vendidos, reservados, total } = stats;
+  if (vendidos === total) return "#ef4444";
+  if (vendidos > 0 || reservados > 0) {
+    const pct = (vendidos + reservados) / total;
+    if (pct > 0.66) return "#f97316";
+    if (pct > 0.33) return "#f59e0b";
+    return "#84cc16";
+  }
+  return "#22c55e";
+}
+
+const MZA_POSITIONS = {
+  A: { x:62, y:28 }, B: { x:55, y:33 }, C: { x:48, y:30 },
+  D: { x:40, y:27 }, E: { x:54, y:22 }, F: { x:46, y:20 },
+  G: { x:54, y:18 }, H: { x:62, y:18 }, I: { x:68, y:23 },
+  J: { x:18, y:52 }, K: { x:55, y:52 }, L: { x:42, y:62 },
+  M: { x:50, y:62 }, N: { x:40, y:55 }, O: { x:55, y:58 },
+  P: { x:62, y:55 }, Q: { x:68, y:60 }, R: { x:60, y:38 },
+  S: { x:48, y:45 },
+};
+
+// ─── UI COMPARTIDA ────────────────────────────────────────────────────────────
+const inputStyle = {
+  width:"100%", padding:"10px 12px", borderRadius:8,
+  border:"2px solid #e2e8f0", fontSize:13, color:"#0f172a",
+  outline:"none", fontFamily:"inherit", boxSizing:"border-box",
+  background:"#f8fafc", resize:"vertical",
+};
+
+const Icon = ({ name }) => {
+  const icons = {
+    check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={14} height={14}><polyline points="20 6 9 17 4 12"/></svg>,
+    clock: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+    x:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={14} height={14}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+    search:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+    close: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={20} height={20}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+    save:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16}><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+  };
+  return icons[name] || null;
+};
+
+function Badge({ status }) {
+  const s = STATUS[status];
+  return (
+    <span style={{
+      display:"inline-flex", alignItems:"center", gap:4,
+      padding:"2px 8px", borderRadius:99,
+      background:s.bg, color:s.text,
+      fontSize:11, fontWeight:700, letterSpacing:"0.04em",
+    }}>
+      {status === "disponible" && <Icon name="check"/>}
+      {status === "reservado" && <Icon name="clock"/>}
+      {status === "vendido" && <Icon name="x"/>}
+      {s.label}
+    </span>
+  );
+}
+
+// ─── MODAL MANZANA (vista mapa) ───────────────────────────────────────────────
+function MzaModal({ mza, lots, onClose, onSaveLot }) {
+  const [selected, setSelected] = useState(null);
+  const [form, setForm] = useState(null);
+  const lotes = MANZANAS_INIT[mza];
+  const stats = getMzaStats(mza, lots);
+
+  const openLot = (lot) => {
+    setSelected(lot);
+    setForm({ ...(lots[lot.id] || { status:"disponible", comprador:"", precio:"", nota:"" }) });
+  };
+
+  const handleSave = () => {
+    onSaveLot(selected.id, form);
+    setSelected(null);
+  };
+
+  if (selected && form) return (
+    <div
+      style={{ position:"fixed", inset:0, background:"#000a", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:16 }}
+      onClick={e => e.target === e.currentTarget && setSelected(null)}
+    >
+      <div style={{ background:"#fff", borderRadius:16, padding:24, width:"100%", maxWidth:420, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 24px 60px #0004" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
+          <div>
+            <div style={{ fontWeight:900, fontSize:18, color:"#0f172a" }}>Lote {selected.id}</div>
+            <div style={{ fontSize:12, color:"#94a3b8" }}>{selected.sup.toFixed(2)} m²</div>
+          </div>
+          <button onClick={() => setSelected(null)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:"#94a3b8", lineHeight:1 }}>✕</button>
+        </div>
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Estado</div>
+          <div style={{ display:"flex", gap:8 }}>
+            {Object.entries(STATUS).map(([k, s]) => (
+              <button key={k} onClick={() => setForm(f => ({ ...f, status:k }))} style={{
+                flex:1, padding:"8px 4px", borderRadius:8, cursor:"pointer",
+                border:"2px solid " + (form.status === k ? s.color : "#e2e8f0"),
+                background: form.status === k ? s.bg : "#f8fafc",
+                color: form.status === k ? s.text : "#94a3b8",
+                fontWeight:700, fontSize:11,
+              }}>{s.label}</button>
+            ))}
+          </div>
+        </div>
+        {[
+          { key:"comprador", label:"Comprador", placeholder:"Nombre completo", type:"text" },
+          { key:"precio", label:"Precio (Bs.)", placeholder:"Ej: 45000", type:"number" },
+          { key:"nota", label:"Observaciones", placeholder:"Notas...", type:"textarea" },
+        ].map(({ key, label, placeholder, type }) => (
+          <div key={key} style={{ marginBottom:14 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>{label}</div>
+            {type === "textarea"
+              ? <textarea rows={3} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]:e.target.value }))} placeholder={placeholder} style={inputStyle}/>
+              : <input type={type} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]:e.target.value }))} placeholder={placeholder} style={inputStyle}/>
+            }
+          </div>
+        ))}
+        <div style={{ display:"flex", gap:10 }}>
+          <button onClick={() => setSelected(null)} style={{ flex:1, padding:"11px", borderRadius:10, border:"2px solid #e2e8f0", background:"#f8fafc", fontWeight:700, fontSize:13, cursor:"pointer", color:"#64748b" }}>Cancelar</button>
+          <button onClick={handleSave} style={{ flex:2, padding:"11px", borderRadius:10, border:"none", background:"#0f172a", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer" }}>💾 Guardar</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      style={{ position:"fixed", inset:0, background:"#000a", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:16 }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{ background:"#fff", borderRadius:16, padding:24, width:"100%", maxWidth:560, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 24px 60px #0004" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <div>
+            <div style={{ fontWeight:900, fontSize:20, color:"#0f172a" }}>Manzana {mza}</div>
+            <div style={{ fontSize:12, color:"#94a3b8" }}>{stats.total} lotes · {stats.vendidos} vendidos · {stats.reservados} reservados</div>
+          </div>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", fontSize:22, color:"#94a3b8" }}>✕</button>
+        </div>
+        <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+          {[
+            ["✅","disponibles",stats.disponibles,"#dcfce7","#166534"],
+            ["⏳","reservados",stats.reservados,"#fef3c7","#92400e"],
+            ["🔴","vendidos",stats.vendidos,"#fee2e2","#991b1b"],
+          ].map(([icon, lbl, val, bg, col]) => (
+            <div key={lbl} style={{ flex:1, background:bg, borderRadius:10, padding:"10px 8px", textAlign:"center" }}>
+              <div style={{ fontSize:18 }}>{icon}</div>
+              <div style={{ fontWeight:900, fontSize:18, color:col }}>{val}</div>
+              <div style={{ fontSize:10, color:col, textTransform:"uppercase", letterSpacing:"0.06em" }}>{lbl}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:8 }}>
+          {lotes.map(lot => {
+            const d = lots[lot.id] || { status:"disponible" };
+            const s = STATUS[d.status];
+            return (
+              <button key={lot.id} onClick={() => openLot(lot)} style={{
+                textAlign:"left", cursor:"pointer", padding:"10px 12px",
+                borderRadius:10, border:"2px solid " + s.color,
+                background: d.status !== "disponible" ? s.bg : "#f8fafc",
+                transition:"all 0.15s", outline:"none",
+              }}>
+                <div style={{ fontWeight:800, fontSize:12, color:"#0f172a" }}>Lote {lot.id}</div>
+                <div style={{ fontSize:10, color:"#94a3b8", marginTop:2 }}>{lot.sup.toFixed(0)} m²</div>
+                <div style={{ fontSize:10, fontWeight:700, color:s.text, marginTop:4 }}>{s.label}</div>
+                {d.comprador && <div style={{ fontSize:10, color:"#475569", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>👤 {d.comprador}</div>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MODAL VENTAS (edición detallada) ────────────────────────────────────────
+function VentasModal({ lot, data, onClose, onSave }) {
+  const [form, setForm] = useState({ ...data });
+  if (!lot) return null;
+  const set = (k, v) => setForm(f => ({ ...f, [k]:v }));
+
+  return (
+    <div
+      style={{ position:"fixed", inset:0, background:"#00000088", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:16 }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{ background:"#fff", borderRadius:16, padding:24, width:"100%", maxWidth:440, boxShadow:"0 20px 60px #0003", maxHeight:"90vh", overflowY:"auto" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+          <div>
+            <div style={{ fontWeight:900, fontSize:18, color:"#0f172a" }}>Lote {lot.id}</div>
+            <div style={{ fontSize:12, color:"#94a3b8" }}>{lot.sup.toFixed(2)} m²</div>
+          </div>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#94a3b8", padding:4 }}>
+            <Icon name="close"/>
+          </button>
+        </div>
+        <div style={{ marginBottom:16 }}>
+          <label style={{ fontSize:11, fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:8 }}>Estado</label>
+          <div style={{ display:"flex", gap:8 }}>
+            {Object.entries(STATUS).map(([key, s]) => (
+              <button key={key} onClick={() => set("status", key)} style={{
+                flex:1, padding:"8px 4px", borderRadius:8, cursor:"pointer",
+                border:"2px solid " + (form.status === key ? s.color : "#e2e8f0"),
+                background: form.status === key ? s.bg : "#f8fafc",
+                color: form.status === key ? s.text : "#94a3b8",
+                fontWeight:700, fontSize:11, transition:"all 0.15s",
+              }}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {[
+          { key:"comprador", label:"Nombre del Comprador", placeholder:"Ej: Juan Pérez", type:"text" },
+          { key:"precio", label:"Precio de Venta (Bs.)", placeholder:"Ej: 45000", type:"number" },
+          { key:"nota", label:"Observaciones", placeholder:"Notas adicionales...", type:"textarea" },
+        ].map(({ key, label, placeholder, type }) => (
+          <div key={key} style={{ marginBottom:14 }}>
+            <label style={{ fontSize:11, fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:6 }}>{label}</label>
+            {type === "textarea"
+              ? <textarea rows={3} value={form[key]} onChange={e => set(key, e.target.value)} placeholder={placeholder} style={inputStyle}/>
+              : <input type={type} value={form[key]} onChange={e => set(key, e.target.value)} placeholder={placeholder} style={inputStyle}/>
+            }
+          </div>
+        ))}
+        <button onClick={() => onSave(lot.id, form)} style={{
+          width:"100%", padding:"12px", borderRadius:10, border:"none",
+          background:"#0f172a", color:"#fff", fontWeight:800, fontSize:14,
+          cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+        }}>
+          <Icon name="save"/> Guardar Cambios
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── VISTA MAPA ───────────────────────────────────────────────────────────────
+function MapaView({ lots, onSaveLot }) {
+  const [activeMza, setActiveMza] = useState(null);
+  const [subView, setSubView] = useState("mapa");
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
+
+  const handleSave = (lotId, form) => {
+    onSaveLot(lotId, form);
+    setActiveMza(null);
+    showToast("✓ Lote " + lotId + " guardado");
+  };
+
+  const allLots = Object.values(MANZANAS_INIT).flat();
+  const total = allLots.length;
+  const vendidos = allLots.filter(l => lots[l.id]?.status === "vendido").length;
+  const reservados = allLots.filter(l => lots[l.id]?.status === "reservado").length;
+  const disponibles = total - vendidos - reservados;
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#0f172a", color:"#fff" }}>
+      {/* Stats + sub-tabs */}
+      <div style={{ background:"#0f172a", borderBottom:"1px solid #1e293b", padding:"12px 16px" }}>
+        <div style={{ maxWidth:900, margin:"0 auto" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <div style={{ fontSize:12, color:"#475569" }}>Toca una manzana para editar sus lotes</div>
+            <div style={{ display:"flex", gap:6 }}>
+              {[["mapa","🗺️ Mapa"],["lista","📋 Lista"]].map(([v, lbl]) => (
+                <button key={v} onClick={() => setSubView(v)} style={{
+                  padding:"6px 12px", borderRadius:8, border:"none", cursor:"pointer",
+                  background: subView === v ? "#3b82f6" : "#1e293b",
+                  color: subView === v ? "#fff" : "#64748b",
+                  fontWeight:700, fontSize:12,
+                }}>{lbl}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:2, scrollbarWidth:"none" }}>
+            {[
+              { label:"Total", val:total, c:"#94a3b8" },
+              { label:"Disponibles", val:disponibles, c:"#22c55e" },
+              { label:"Reservados", val:reservados, c:"#f59e0b" },
+              { label:"Vendidos", val:vendidos, c:"#ef4444" },
+              { label:"% Vendido", val:Math.round(vendidos/total*100)+"%", c:"#818cf8" },
+            ].map(s => (
+              <div key={s.label} style={{ background:"#1e293b", borderRadius:10, padding:"8px 14px", minWidth:80, flexShrink:0, textAlign:"center" }}>
+                <div style={{ fontWeight:900, fontSize:18, color:s.c }}>{s.val}</div>
+                <div style={{ fontSize:10, color:"#475569" }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth:900, margin:"0 auto", padding:"16px" }}>
+        {subView === "mapa" ? (
+          <div>
+            <div style={{ position:"relative", borderRadius:16, overflow:"hidden", border:"2px solid #1e293b", background:"#1e293b" }}>
+              <img src={PLANO_IMG} alt="Plano Terdemol" style={{ width:"100%", display:"block", opacity:0.85 }}/>
+              {Object.entries(MZA_POSITIONS).map(([mza, pos]) => {
+                const stats = getMzaStats(mza, lots);
+                const color = getMzaColor(stats);
+                return (
+                  <button key={mza} onClick={() => setActiveMza(mza)} style={{
+                    position:"absolute",
+                    left:pos.x + "%", top:pos.y + "%",
+                    transform:"translate(-50%,-50%)",
+                    background:color,
+                    border:"2px solid #fff",
+                    borderRadius:8, cursor:"pointer",
+                    padding:"4px 8px", minWidth:52,
+                    textAlign:"center",
+                    boxShadow:"0 2px 12px " + color + "99",
+                    transition:"all 0.15s",
+                    zIndex:10,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "translate(-50%,-50%) scale(1.15)"; e.currentTarget.style.zIndex = "20"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = "translate(-50%,-50%) scale(1)"; e.currentTarget.style.zIndex = "10"; }}
+                  >
+                    <div style={{ fontWeight:900, fontSize:13, color:"#fff", lineHeight:1 }}>{mza}</div>
+                    <div style={{ fontSize:9, color:"#fff", opacity:0.9, lineHeight:1.2 }}>{stats.vendidos}/{stats.total}</div>
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display:"flex", gap:12, justifyContent:"center", marginTop:14, flexWrap:"wrap" }}>
+              {[
+                { color:"#22c55e", label:"0% vendido" },
+                { color:"#84cc16", label:"<33%" },
+                { color:"#f59e0b", label:"33–66%" },
+                { color:"#f97316", label:">66%" },
+                { color:"#ef4444", label:"100% vendido" },
+              ].map(l => (
+                <div key={l.label} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                  <div style={{ width:14, height:14, borderRadius:4, background:l.color }}/>
+                  <span style={{ fontSize:11, color:"#64748b" }}>{l.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div>
+            {Object.keys(MANZANAS_INIT).map(mza => {
+              const stats = getMzaStats(mza, lots);
+              const color = getMzaColor(stats);
+              return (
+                <button key={mza} onClick={() => setActiveMza(mza)} style={{
+                  width:"100%", textAlign:"left", cursor:"pointer",
+                  background:"#1e293b", border:"2px solid " + color + "44",
+                  borderRadius:12, padding:"14px 16px", marginBottom:10,
+                  display:"flex", alignItems:"center", gap:14, outline:"none",
+                  transition:"all 0.15s",
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = color}
+                onMouseLeave={e => e.currentTarget.style.borderColor = color + "44"}
+                >
+                  <div style={{ width:44, height:44, borderRadius:10, background:color, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:18, color:"#fff", flexShrink:0 }}>{mza}</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontWeight:800, fontSize:14, color:"#f1f5f9" }}>
+                      Manzana {mza}
+                      <span style={{ fontWeight:400, color:"#475569", fontSize:12, marginLeft:8 }}>· {stats.total} lotes</span>
+                    </div>
+                    <div style={{ display:"flex", gap:12, marginTop:4 }}>
+                      <span style={{ fontSize:11, color:"#22c55e" }}>✅ {stats.disponibles}</span>
+                      <span style={{ fontSize:11, color:"#f59e0b" }}>⏳ {stats.reservados}</span>
+                      <span style={{ fontSize:11, color:"#ef4444" }}>🔴 {stats.vendidos}</span>
+                    </div>
+                  </div>
+                  <div style={{ width:60, flexShrink:0 }}>
+                    <div style={{ height:6, background:"#0f172a", borderRadius:99, overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:stats.pctVendido + "%", background:color, borderRadius:99 }}/>
+                    </div>
+                    <div style={{ fontSize:10, color:"#475569", textAlign:"right", marginTop:3 }}>{stats.pctVendido}%</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {activeMza && (
+        <MzaModal
+          mza={activeMza}
+          lots={lots}
+          onClose={() => setActiveMza(null)}
+          onSaveLot={handleSave}
+        />
+      )}
+
+      {toast && (
+        <div style={{
+          position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)",
+          background:"#22c55e", color:"#fff", padding:"10px 20px",
+          borderRadius:99, fontWeight:700, fontSize:13,
+          boxShadow:"0 4px 20px #0004", zIndex:999,
+        }}>{toast}</div>
+      )}
+    </div>
+  );
+}
+
+// ─── VISTA VENTAS ─────────────────────────────────────────────────────────────
+function VentasView({ lots, onSaveLot }) {
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterMza, setFilterMza] = useState("all");
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg, color) => {
+    setToast({ msg, color: color || "#22c55e" });
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const handleSave = (lotId, form) => {
+    onSaveLot(lotId, form);
+    setSelected(null);
+    showToast("Lote " + lotId + " actualizado");
+  };
+
+  const allLotIds = Object.values(MANZANAS_INIT).flat();
+  const total = allLotIds.length;
+  const vendidos = allLotIds.filter(l => lots[l.id]?.status === "vendido").length;
+  const reservados = allLotIds.filter(l => lots[l.id]?.status === "reservado").length;
+  const disponibles = total - vendidos - reservados;
+  const totalVentas = allLotIds.reduce((acc, l) => {
+    const d = lots[l.id];
+    return d?.status === "vendido" && d.precio ? acc + Number(d.precio) : acc;
+  }, 0);
+
+  const mzaKeys = Object.keys(MANZANAS_INIT);
+  const filteredMzas = filterMza === "all" ? mzaKeys : [filterMza];
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#f1f5f9" }}>
+      {/* Stats bar */}
+      <div style={{ background:"#0f172a", padding:"16px 20px" }}>
+        <div style={{ maxWidth:1200, margin:"0 auto" }}>
+          <div style={{ display:"flex", gap:12, overflowX:"auto", paddingBottom:4, scrollbarWidth:"none" }}>
+            {[
+              { label:"Total Lotes", val:total, color:"#94a3b8", icon:"🗂️" },
+              { label:"Disponibles", val:disponibles, color:"#22c55e", icon:"✅" },
+              { label:"Reservados", val:reservados, color:"#f59e0b", icon:"⏳" },
+              { label:"Vendidos", val:vendidos, color:"#ef4444", icon:"🔴" },
+              { label:"Ingresos Bs.", val:(totalVentas/1000).toFixed(0)+"K", color:"#818cf8", icon:"💰" },
+            ].map(s => (
+              <div key={s.label} style={{ background:"#1e293b", borderRadius:10, padding:"10px 16px", minWidth:100, flexShrink:0, textAlign:"center" }}>
+                <div style={{ fontSize:16 }}>{s.icon}</div>
+                <div style={{ fontWeight:900, fontSize:20, color:s.color, lineHeight:1.1 }}>{s.val}</div>
+                <div style={{ fontSize:10, color:"#64748b", marginTop:2 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div style={{ background:"#fff", borderBottom:"1px solid #e2e8f0", padding:"12px 20px" }}>
+        <div style={{ maxWidth:1200, margin:"0 auto", display:"flex", gap:10, flexWrap:"wrap" }}>
+          <div style={{ position:"relative", flex:1, minWidth:160 }}>
+            <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", color:"#94a3b8" }}>
+              <Icon name="search"/>
+            </span>
+            <input
+              placeholder="Buscar lote o comprador..."
+              value={search} onChange={e => setSearch(e.target.value)}
+              style={{ ...inputStyle, paddingLeft:34 }}
+            />
+          </div>
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ ...inputStyle, flex:"0 0 auto", width:"auto", cursor:"pointer" }}>
+            <option value="all">Todos los estados</option>
+            {Object.entries(STATUS).map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}
+          </select>
+          <select value={filterMza} onChange={e => setFilterMza(e.target.value)} style={{ ...inputStyle, flex:"0 0 auto", width:"auto", cursor:"pointer" }}>
+            <option value="all">Todas las manzanas</option>
+            {mzaKeys.map(m => <option key={m} value={m}>Manzana {m}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Grid de lotes */}
+      <div style={{ maxWidth:1200, margin:"0 auto", padding:"20px 16px 40px" }}>
+        {filteredMzas.map(mza => {
+          const mzaLots = MANZANAS_INIT[mza].filter(lot => {
+            const d = lots[lot.id] || { status:"disponible" };
+            const matchStatus = filterStatus === "all" || d.status === filterStatus;
+            const q = search.toLowerCase();
+            const matchSearch = !q || lot.id.toLowerCase().includes(q) || (d.comprador || "").toLowerCase().includes(q);
+            return matchStatus && matchSearch;
+          });
+          if (!mzaLots.length) return null;
+
+          const mVendidos = mzaLots.filter(l => lots[l.id]?.status === "vendido").length;
+          const mReservados = mzaLots.filter(l => lots[l.id]?.status === "reservado").length;
+
+          return (
+            <div key={mza} style={{ marginBottom:28 }}>
+              <div style={{
+                display:"flex", alignItems:"center", justifyContent:"space-between",
+                marginBottom:12, padding:"10px 14px",
+                background:"#0f172a", borderRadius:10,
+              }}>
+                <div style={{ fontWeight:900, fontSize:15, color:"#fff" }}>
+                  Manzana {mza}
+                  <span style={{ fontWeight:400, color:"#64748b", fontSize:12, marginLeft:8 }}>{mzaLots.length} lotes</span>
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  {mVendidos > 0 && <Badge status="vendido"/>}
+                  {mReservados > 0 && <Badge status="reservado"/>}
+                </div>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(160px, 1fr))", gap:10 }}>
+                {mzaLots.map(lot => {
+                  const d = lots[lot.id] || { status:"disponible" };
+                  const s = STATUS[d.status];
+                  return (
+                    <button key={lot.id} onClick={() => setSelected(lot)} style={{
+                      width:"100%", textAlign:"left", cursor:"pointer",
+                      background:"#fff", border:"2px solid " + s.color,
+                      borderRadius:10, padding:"10px 12px",
+                      transition:"all 0.15s", outline:"none",
+                      boxShadow: d.status !== "disponible" ? "0 2px 8px " + s.color + "33" : "0 1px 3px #0001",
+                      display:"flex", flexDirection:"column", gap:4,
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.transform = "translateY(-1px)"}
+                    onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+                    >
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                        <span style={{ fontWeight:800, fontSize:13, color:"#1e293b" }}>Lote {lot.id}</span>
+                        <Badge status={d.status}/>
+                      </div>
+                      <div style={{ fontSize:11, color:"#64748b" }}>{lot.sup.toFixed(2)} m²</div>
+                      {d.comprador && (
+                        <div style={{ fontSize:11, color:"#334155", fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                          👤 {d.comprador}
+                        </div>
+                      )}
+                      {d.precio && (
+                        <div style={{ fontSize:11, color:"#059669", fontWeight:700 }}>
+                          💰 Bs. {Number(d.precio).toLocaleString()}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Leyenda */}
+      <div style={{ background:"#fff", borderTop:"1px solid #e2e8f0", padding:"16px 20px", textAlign:"center" }}>
+        <div style={{ display:"flex", justifyContent:"center", gap:20, flexWrap:"wrap" }}>
+          {Object.entries(STATUS).map(([k, s]) => (
+            <div key={k} style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <div style={{ width:12, height:12, borderRadius:3, background:s.color }}/>
+              <span style={{ fontSize:12, color:"#475569" }}>{s.label}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize:11, color:"#94a3b8", marginTop:8 }}>
+          Datos guardados automáticamente · Urb. Terdemol de Santivañez
+        </div>
+      </div>
+
+      {selected && (
+        <VentasModal
+          lot={selected}
+          data={lots[selected.id] || { status:"disponible", comprador:"", precio:"", nota:"" }}
+          onClose={() => setSelected(null)}
+          onSave={handleSave}
+        />
+      )}
+
+      {toast && (
+        <div style={{
+          position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)",
+          background:toast.color, color:"#fff", padding:"10px 20px",
+          borderRadius:99, fontWeight:700, fontSize:13,
+          boxShadow:"0 4px 20px #0003", zIndex:2000,
+        }}>
+          ✓ {toast.msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── APP PRINCIPAL ────────────────────────────────────────────────────────────
+function App() {
+  const [tab, setTab] = useState("mapa");
+  const [lots, setLots] = useState(() => loadLots() || buildInitialState());
+
+  const handleSaveLot = (lotId, form) => {
+    setLots(prev => {
+      const next = { ...prev, [lotId]: form };
+      saveLots(next);
+      return next;
+    });
+  };
+
+  const tabStyle = (active) => ({
+    flex:1, padding:"14px 8px", border:"none", cursor:"pointer",
+    background: active ? "#3b82f6" : "transparent",
+    color: active ? "#fff" : "#64748b",
+    fontWeight:800, fontSize:13,
+    borderBottom: active ? "3px solid #60a5fa" : "3px solid transparent",
+    transition:"all 0.15s", letterSpacing:"0.02em",
+  });
+
+  return (
+    <div style={{ fontFamily:"'DM Sans','Segoe UI',sans-serif" }}>
+      {/* Barra de tabs global */}
+      <div style={{
+        position:"sticky", top:0, zIndex:500,
+        background:"#0f172a",
+        display:"flex",
+        boxShadow:"0 2px 12px #0004",
+      }}>
+        <div style={{ maxWidth:900, margin:"0 auto", display:"flex", width:"100%", padding:"0 8px" }}>
+          <button onClick={() => setTab("mapa")} style={tabStyle(tab === "mapa")}>🗺️ Mapa</button>
+          <button onClick={() => setTab("ventas")} style={tabStyle(tab === "ventas")}>📋 Control de Ventas</button>
+        </div>
+      </div>
+
+      {tab === "mapa"
+        ? <MapaView lots={lots} onSaveLot={handleSaveLot}/>
+        : <VentasView lots={lots} onSaveLot={handleSaveLot}/>
+      }
+
+      <style>{`
+        * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        body { margin:0; }
+        ::-webkit-scrollbar { display:none; }
+        select, input, textarea { font-family:inherit; }
+      `}</style>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
