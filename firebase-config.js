@@ -19,6 +19,9 @@
  *       match /terdemol/lots {
  *         allow read, write: if true;
  *       }
+ *       match /terdemol_backups/{doc} {
+ *         allow read, write: if true;
+ *       }
  *       match /{document=**} {
  *         allow read, write: if false;
  *       }

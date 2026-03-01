@@ -30,10 +30,10 @@ const appCode = fs.readFileSync(path.join(dir, "_app.jsx"), "utf8");
 const firebaseConfigPath = path.join(dir, "firebase-config.js");
 let firebaseConfigCode = "";
 let firebaseReady = false;
-if (fs.existsSync(firebaseConfigPath)) {
+try {
   firebaseConfigCode = fs.readFileSync(firebaseConfigPath, "utf8");
   firebaseReady = !firebaseConfigCode.includes("PEGAR-AQUI");
-}
+} catch { /* archivo no existe aún */ }
 
 const firebaseScripts = `
   <!-- Firebase 10 compat (Firestore) -->
