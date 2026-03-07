@@ -179,14 +179,19 @@ async function loadLots() {
 }
 
 // Guarda el estado principal + un backup en un único batch atómico
-async function saveLots(data) {
+// meta = { lotId, modifiedBy } para el registro de auditoría
+async function saveLots(data, meta = {}) {
+  const timestamp = new Date().toISOString();
   if (firebaseReady()) {
     try {
       const db = firebase.firestore();
-      const timestamp = new Date().toISOString();
       const batch = db.batch();
       batch.set(db.doc(FIRESTORE_DOC), { lots: data });
-      batch.set(db.collection(BACKUP_COLLECTION).doc(timestamp), { lots: data, timestamp });
+      batch.set(db.collection(BACKUP_COLLECTION).doc(timestamp), {
+        lots: data, timestamp,
+        lotId:      meta.lotId      || null,
+        modifiedBy: meta.modifiedBy || "?",
+      });
       await batch.commit();
       return;
     } catch(e) {
@@ -196,8 +201,62 @@ async function saveLots(data) {
   // Fallback localStorage
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    localStorage.setItem("terdemol-backup-last", JSON.stringify({ lots: data, timestamp: new Date().toISOString() }));
+    localStorage.setItem("terdemol-backup-last", JSON.stringify({ lots: data, timestamp, ...meta }));
   } catch {}
+}
+
+// ─── AUTH / CONFIG ────────────────────────────────────────────────────────────
+const AUTH_KEY   = "terdemol-auth-v1";
+const CONFIG_DOC = "terdemol/config";
+
+function getStoredAuth() {
+  try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch { return null; }
+}
+function storeAuth(auth) {
+  try { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); } catch {}
+}
+function clearStoredAuth() {
+  try { localStorage.removeItem(AUTH_KEY); } catch {}
+}
+
+async function getAdminConfig() {
+  if (firebaseReady()) {
+    try {
+      const snap = await firebase.firestore().doc(CONFIG_DOC).get();
+      return snap.exists ? snap.data() : {};
+    } catch(e) { console.warn(e.message); }
+  }
+  return {};
+}
+async function saveAdminConfig(data) {
+  if (firebaseReady()) {
+    try {
+      await firebase.firestore().doc(CONFIG_DOC).set(data, { merge: true });
+      return true;
+    } catch(e) { console.warn(e.message); }
+  }
+  return false;
+}
+
+async function loadHistory(limitN = 30) {
+  if (!firebaseReady()) return [];
+  try {
+    const snap = await firebase.firestore()
+      .collection(BACKUP_COLLECTION)
+      .orderBy("timestamp", "desc")
+      .limit(limitN)
+      .get();
+    return snap.docs.map(d => d.data());
+  } catch(e) { console.warn("Historial:", e.message); return []; }
+}
+
+function formatDate(iso) {
+  if (!iso) return "";
+  const diff = (Date.now() - new Date(iso)) / 1000;
+  if (diff < 60)    return "ahora";
+  if (diff < 3600)  return Math.floor(diff / 60) + " min";
+  if (diff < 86400) return Math.floor(diff / 3600) + " h";
+  return new Date(iso).toLocaleDateString("es-BO", { day:"2-digit", month:"2-digit", year:"2-digit" });
 }
 
 function buildInitialState() {
@@ -279,6 +338,121 @@ function Badge({ status }) {
 }
 
 // ─── MODAL MANZANA (vista mapa) ───────────────────────────────────────────────
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [tab, setTab] = useState("promotor");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [firstSetup, setFirstSetup] = useState(false);
+
+  useEffect(() => {
+    if (tab === "admin") {
+      getAdminConfig().then(cfg => setFirstSetup(!cfg.adminPassword));
+    }
+  }, [tab]);
+
+  const handlePromotor = () => {
+    if (!name.trim()) { setError("Ingresa tu nombre"); return; }
+    const auth = { role: "promotor", name: name.trim() };
+    storeAuth(auth);
+    onLogin(auth);
+  };
+
+  const handleAdmin = async () => {
+    if (!password) { setError("Ingresa la contraseña"); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const cfg = await getAdminConfig();
+      if (!cfg.adminPassword) {
+        await saveAdminConfig({ adminPassword: password });
+        const auth = { role: "admin", name: "Admin" };
+        storeAuth(auth);
+        onLogin(auth);
+      } else if (cfg.adminPassword === password) {
+        const auth = { role: "admin", name: "Admin" };
+        storeAuth(auth);
+        onLogin(auth);
+      } else {
+        setError("Contraseña incorrecta");
+      }
+    } catch { setError("Error de conexión"); }
+    setLoading(false);
+  };
+
+  const darkInput = { ...inputStyle, background:"#1e293b", border:"2px solid #334155", color:"#fff" };
+
+  return (
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#0f172a", padding:16 }}>
+      <div style={{ width:"100%", maxWidth:360 }}>
+        <div style={{ textAlign:"center", marginBottom:32 }}>
+          <div style={{ fontSize:48, marginBottom:8 }}>🏘️</div>
+          <div style={{ fontWeight:900, fontSize:22, color:"#fff" }}>Urb. Terdemol</div>
+          <div style={{ fontSize:12, color:"#475569" }}>Santivañez · Control de Ventas</div>
+        </div>
+
+        <div style={{ display:"flex", background:"#1e293b", borderRadius:12, padding:4, marginBottom:24 }}>
+          {[["promotor","👤 Promotor"],["admin","🔑 Administrador"]].map(([v, lbl]) => (
+            <button key={v} onClick={() => { setTab(v); setError(""); }} style={{
+              flex:1, padding:"10px 8px", borderRadius:9, border:"none", cursor:"pointer",
+              background: tab === v ? "#3b82f6" : "transparent",
+              color: tab === v ? "#fff" : "#64748b",
+              fontWeight:700, fontSize:13, transition:"all 0.15s",
+            }}>{lbl}</button>
+          ))}
+        </div>
+
+        {tab === "promotor" && (
+          <div>
+            <div style={{ fontSize:11, fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Tu nombre</div>
+            <input
+              value={name} onChange={e => { setName(e.target.value); setError(""); }}
+              onKeyDown={e => e.key === "Enter" && handlePromotor()}
+              placeholder="Ej: Juan Pérez" autoFocus style={{ ...darkInput, marginBottom:16 }}
+            />
+            {error && <div style={{ color:"#f87171", fontSize:12, marginBottom:12 }}>{error}</div>}
+            <button onClick={handlePromotor} style={{
+              width:"100%", padding:"13px", borderRadius:10, border:"none",
+              background:"#3b82f6", color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer",
+            }}>Entrar</button>
+          </div>
+        )}
+
+        {tab === "admin" && (
+          <div>
+            {firstSetup && (
+              <div style={{ background:"#1e3a5f", border:"1px solid #3b82f6", borderRadius:8, padding:"10px 14px", marginBottom:16, fontSize:12, color:"#93c5fd" }}>
+                Primera vez: establece la contraseña de administrador
+              </div>
+            )}
+            <div style={{ fontSize:11, fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>
+              {firstSetup ? "Nueva contraseña" : "Contraseña"}
+            </div>
+            <input
+              type="password" value={password}
+              onChange={e => { setPassword(e.target.value); setError(""); }}
+              onKeyDown={e => e.key === "Enter" && handleAdmin()}
+              placeholder="••••••••" autoFocus style={{ ...darkInput, marginBottom:16 }}
+            />
+            {error && <div style={{ color:"#f87171", fontSize:12, marginBottom:12 }}>{error}</div>}
+            <button onClick={handleAdmin} disabled={loading} style={{
+              width:"100%", padding:"13px", borderRadius:10,
+              border:"2px solid #3b82f6",
+              background: loading ? "#1e293b" : "#0f172a",
+              color:"#fff", fontWeight:800, fontSize:14,
+              cursor: loading ? "wait" : "pointer",
+            }}>
+              {loading ? "Verificando..." : (firstSetup ? "Establecer contraseña" : "Ingresar")}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MzaModal({ mza, lots, onClose, onSaveLot }) {
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(null);
@@ -409,6 +583,11 @@ function VentasModal({ lot, data, onClose, onSave }) {
           <div>
             <div style={{ fontWeight:900, fontSize:18, color:"#0f172a" }}>Lote {lot.id}</div>
             <div style={{ fontSize:12, color:"#94a3b8" }}>{lot.sup.toFixed(2)} m²</div>
+            {data.modifiedBy && (
+              <div style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>
+                ✏️ {data.modifiedBy} · {formatDate(data.modifiedAt)}
+              </div>
+            )}
           </div>
           <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#94a3b8", padding:4 }}>
             <Icon name="close"/>
@@ -759,6 +938,11 @@ function VentasView({ lots, onSaveLot }) {
                           💰 Bs. {Number(d.precio).toLocaleString()}
                         </div>
                       )}
+                      {d.modifiedBy && (
+                        <div style={{ fontSize:10, color:"#94a3b8", marginTop:2 }}>
+                          ✏️ {d.modifiedBy} · {formatDate(d.modifiedAt)}
+                        </div>
+                      )}
                     </button>
                   );
                 })}
@@ -806,20 +990,114 @@ function VentasView({ lots, onSaveLot }) {
   );
 }
 
-// ─── APP PRINCIPAL ────────────────────────────────────────────────────────────
-function App() {
-  const [tab, setTab] = useState("mapa");
-  const [lots, setLots] = useState(null); // null = cargando
+// ─── HISTORIAL (solo admin) ───────────────────────────────────────────────────
+function HistorialView() {
+  const [history, setHistory] = useState(null);
 
   useEffect(() => {
-    loadLots().then(saved => setLots(saved || buildInitialState()));
+    loadHistory(40).then(h => setHistory(h));
   }, []);
 
-  const handleSaveLot = (lotId, form) => {
-    const next = { ...lots, [lotId]: form };
-    setLots(next);
-    saveLots(next); // async fire-and-forget, fuera del updater para evitar doble invocación
+  if (!history) return (
+    <div style={{ textAlign:"center", padding:60, color:"#94a3b8", background:"#f1f5f9", minHeight:"100vh" }}>
+      <div style={{ fontSize:28, marginBottom:8 }}>⏳</div>
+      <div style={{ fontWeight:700 }}>Cargando historial...</div>
+    </div>
+  );
+
+  if (!history.length) return (
+    <div style={{ textAlign:"center", padding:60, color:"#94a3b8", background:"#f1f5f9", minHeight:"100vh" }}>
+      <div style={{ fontSize:36, marginBottom:8 }}>📭</div>
+      <div style={{ fontWeight:700 }}>Sin historial aún</div>
+      <div style={{ fontSize:12, marginTop:4 }}>Los cambios aparecerán aquí</div>
+    </div>
+  );
+
+  return (
+    <div style={{ background:"#f1f5f9", minHeight:"100vh" }}>
+      <div style={{ maxWidth:700, margin:"0 auto", padding:"20px 16px 40px" }}>
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontWeight:800, fontSize:16, color:"#0f172a" }}>Historial de cambios</div>
+          <div style={{ fontSize:12, color:"#94a3b8" }}>Últimos {history.length} registros · solo visible para el administrador</div>
+        </div>
+        {history.map((entry, i) => {
+          const lot = entry.lotId && entry.lots ? entry.lots[entry.lotId] : null;
+          const s = lot ? STATUS[lot.status] : null;
+          const isAdmin = entry.modifiedBy === "Admin";
+          return (
+            <div key={i} style={{
+              display:"flex", alignItems:"center", gap:12,
+              background:"#fff", borderRadius:10, padding:"12px 14px",
+              marginBottom:8, boxShadow:"0 1px 3px #0001",
+            }}>
+              <div style={{
+                width:36, height:36, borderRadius:99, flexShrink:0,
+                background: isAdmin ? "#0f172a" : "#3b82f6",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                color:"#fff", fontWeight:800, fontSize:14,
+              }}>
+                {(entry.modifiedBy || "?").charAt(0).toUpperCase()}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <span style={{ fontWeight:700, fontSize:13, color:"#0f172a" }}>
+                    {isAdmin ? "🔑 Admin" : "👤 " + (entry.modifiedBy || "—")}
+                  </span>
+                  <span style={{ fontSize:11, color:"#94a3b8" }}>{formatDate(entry.timestamp)}</span>
+                </div>
+                {entry.lotId ? (
+                  <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:3, flexWrap:"wrap" }}>
+                    <span style={{ fontSize:12, color:"#64748b" }}>Lote {entry.lotId}</span>
+                    {s && (
+                      <span style={{ fontSize:10, fontWeight:700, padding:"1px 7px", borderRadius:99, background:s.bg, color:s.text }}>
+                        {s.label}
+                      </span>
+                    )}
+                    {lot?.comprador && (
+                      <span style={{ fontSize:11, color:"#475569" }}>· {lot.comprador}</span>
+                    )}
+                    {lot?.precio && (
+                      <span style={{ fontSize:11, color:"#059669", fontWeight:700 }}>· Bs. {Number(lot.precio).toLocaleString()}</span>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ fontSize:12, color:"#94a3b8", marginTop:2 }}>Cambio general</div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── APP PRINCIPAL ────────────────────────────────────────────────────────────
+function App() {
+  const [auth, setAuth] = useState(() => getStoredAuth());
+  const [tab, setTab] = useState("mapa");
+  const [lots, setLots] = useState(null);
+
+  useEffect(() => {
+    if (auth) loadLots().then(saved => setLots(saved || buildInitialState()));
+  }, [auth]);
+
+  const handleLogin = (authData) => setAuth(authData);
+
+  const handleLogout = () => {
+    clearStoredAuth();
+    setAuth(null);
+    setLots(null);
   };
+
+  const handleSaveLot = (lotId, form) => {
+    const enriched = { ...form, modifiedBy: auth.name, modifiedAt: new Date().toISOString() };
+    const next = { ...lots, [lotId]: enriched };
+    setLots(next);
+    saveLots(next, { lotId, modifiedBy: auth.name });
+  };
+
+  if (!auth) return <LoginScreen onLogin={handleLogin}/>;
 
   if (!lots) return (
     <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#0f172a" }}>
@@ -832,34 +1110,46 @@ function App() {
     </div>
   );
 
+  const isAdmin = auth.role === "admin";
+  const tabs = [
+    ["mapa",     "🗺️ Mapa"],
+    ["ventas",   "📋 Ventas"],
+    ...(isAdmin ? [["historial", "📜 Historial"]] : []),
+  ];
+
   const tabStyle = (active) => ({
     flex:1, padding:"14px 8px", border:"none", cursor:"pointer",
     background: active ? "#3b82f6" : "transparent",
     color: active ? "#fff" : "#64748b",
     fontWeight:800, fontSize:13,
     borderBottom: active ? "3px solid #60a5fa" : "3px solid transparent",
-    transition:"all 0.15s", letterSpacing:"0.02em",
+    transition:"all 0.15s",
   });
 
   return (
     <div style={{ fontFamily:"'DM Sans','Segoe UI',sans-serif" }}>
-      {/* Barra de tabs global */}
-      <div style={{
-        position:"sticky", top:0, zIndex:500,
-        background:"#0f172a",
-        display:"flex",
-        boxShadow:"0 2px 12px #0004",
-      }}>
-        <div style={{ maxWidth:900, margin:"0 auto", display:"flex", width:"100%", padding:"0 8px" }}>
-          <button onClick={() => setTab("mapa")} style={tabStyle(tab === "mapa")}>🗺️ Mapa</button>
-          <button onClick={() => setTab("ventas")} style={tabStyle(tab === "ventas")}>📋 Control de Ventas</button>
+      <div style={{ position:"sticky", top:0, zIndex:500, background:"#0f172a", display:"flex", boxShadow:"0 2px 12px #0004" }}>
+        <div style={{ maxWidth:900, margin:"0 auto", display:"flex", width:"100%", padding:"0 4px", alignItems:"center" }}>
+          {tabs.map(([v, lbl]) => (
+            <button key={v} onClick={() => setTab(v)} style={tabStyle(tab === v)}>{lbl}</button>
+          ))}
+          {/* Indicador de usuario + salir */}
+          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"0 8px", marginLeft:"auto", flexShrink:0 }}>
+            <span style={{ fontSize:11, color:"#64748b", maxWidth:90, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              {isAdmin ? "🔑" : "👤"} {auth.name}
+            </span>
+            <button onClick={handleLogout} style={{
+              padding:"4px 8px", borderRadius:6,
+              border:"1px solid #334155", background:"transparent",
+              color:"#64748b", fontSize:11, cursor:"pointer",
+            }}>Salir</button>
+          </div>
         </div>
       </div>
 
-      {tab === "mapa"
-        ? <MapaView lots={lots} onSaveLot={handleSaveLot}/>
-        : <VentasView lots={lots} onSaveLot={handleSaveLot}/>
-      }
+      {tab === "mapa"      && <MapaView lots={lots} onSaveLot={handleSaveLot}/>}
+      {tab === "ventas"    && <VentasView lots={lots} onSaveLot={handleSaveLot}/>}
+      {tab === "historial" && isAdmin && <HistorialView/>}
 
       <style>{`
         * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }

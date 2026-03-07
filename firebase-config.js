@@ -16,8 +16,8 @@
  *   rules_version = '2';
  *   service cloud.firestore {
  *     match /databases/{database}/documents {
- *       match /terdemol/lots {
- *         allow read, write: if true;
+ *       match /terdemol/{document} {
+ *         allow read, write: if true;  // cubre /lots y /config
  *       }
  *       match /terdemol_backups/{doc} {
  *         allow read, write: if true;
