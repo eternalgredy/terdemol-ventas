@@ -744,12 +744,12 @@ function MapaView({ lots, onSaveLot }) {
                           <title>{lotId} — {sup} m² — {status}</title>
                         </polygon>
                         <text x={cx} y={cy - 3} textAnchor="middle" dominantBaseline="middle"
+                          stroke="#0f172a" strokeWidth="2.5" strokeLinejoin="round" paintOrder="stroke"
+                          style={{ fontSize:6, fontWeight:"bold", fill:"#ffffff", pointerEvents:"none" }}
+                        >{lotId}</text>
+                        <text x={cx} y={cy + 5} textAnchor="middle" dominantBaseline="middle"
                           stroke="#0f172a" strokeWidth="2" strokeLinejoin="round" paintOrder="stroke"
-                          style={{ fontSize:5.5, fontWeight:"bold", fill:"#fff", pointerEvents:"none" }}
-                        >{num}</text>
-                        <text x={cx} y={cy + 4.5} textAnchor="middle" dominantBaseline="middle"
-                          stroke="#0f172a" strokeWidth="2" strokeLinejoin="round" paintOrder="stroke"
-                          style={{ fontSize:4.5, fill:"#e2e8f0", pointerEvents:"none" }}
+                          style={{ fontSize:4.5, fill:"#ffffff", pointerEvents:"none" }}
                         >{sup}m²</text>
                       </g>
                     );
