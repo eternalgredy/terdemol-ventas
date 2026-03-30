@@ -9,6 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const Babel = require("@babel/standalone");
 
 const dir = __dirname;
 
@@ -23,8 +24,9 @@ if (!planoLine) {
 // La transformamos para asignarla a window.__PLANO_IMG
 const planoAssignment = planoLine.trim().replace("const PLANO_IMG", "window.__PLANO_IMG");
 
-// 2. Leer el código de la app
-const appCode = fs.readFileSync(path.join(dir, "_app.jsx"), "utf8");
+// 2. Leer y precompilar el código de la app (JSX → JS puro)
+const appRaw = fs.readFileSync(path.join(dir, "_app.jsx"), "utf8");
+const appCode = Babel.transform(appRaw, { presets: ["react"] }).code;
 
 // 3. Leer firebase-config.js (si existe y tiene valores reales)
 const firebaseConfigPath = path.join(dir, "firebase-config.js");
@@ -69,8 +71,6 @@ const html = `<!DOCTYPE html>
   <!-- React 18 -->${firebaseScripts}
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- Babel para JSX en navegador -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <!-- Fuente -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -104,8 +104,8 @@ ${planoAssignment}
 <!-- Script 2: Firebase config -->
 ${firebaseInitBlock}
 
-<!-- Script 3: app React+JSX (transpilada por Babel en el navegador) -->
-<script type="text/babel" data-presets="react">
+<!-- Script 3: app React (precompilada) -->
+<script>
 ${appCode}
 </script>
 
