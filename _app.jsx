@@ -145,7 +145,7 @@ function buildInitialState() {
 
 // ─── HELPERS MAPA ─────────────────────────────────────────────────────────────
 function getMzaStats(mza, lots) {
-  const lotes = MANZANAS_INIT[mza];
+  const lotes = MANZANAS_INIT[mza] || [];
   const total = lotes.length;
   const vendidos = lotes.filter(l => lots[l.id]?.status === "vendido").length;
   const reservados = lotes.filter(l => lots[l.id]?.status === "reservado").length;
@@ -166,15 +166,19 @@ function getMzaColor(stats) {
   return "#22c55e";
 }
 
-const MZA_POSITIONS = {
-  A: { x:62, y:28 }, B: { x:55, y:33 }, C: { x:48, y:30 },
-  D: { x:40, y:27 }, E: { x:54, y:22 }, F: { x:46, y:20 },
-  G: { x:54, y:18 }, H: { x:62, y:18 }, I: { x:68, y:23 },
-  J: { x:18, y:52 }, K: { x:55, y:52 }, L: { x:42, y:62 },
-  M: { x:50, y:62 }, N: { x:40, y:55 }, O: { x:55, y:58 },
-  P: { x:62, y:55 }, Q: { x:68, y:60 }, R: { x:60, y:38 },
-  S: { x:48, y:45 },
-};
+const MZA_POSITIONS = Object.fromEntries(
+  Object.keys(MANZANAS_INIT).map((mza, i) => {
+    // Posiciones aproximadas distribuidas en la imagen; ajustar si es necesario
+    const positions = {
+      A:{x:62,y:28}, B:{x:55,y:33}, C:{x:48,y:30},
+      D:{x:40,y:27}, E:{x:54,y:22}, F:{x:46,y:20},
+      G:{x:54,y:18}, H:{x:62,y:18}, I:{x:68,y:23},
+      J:{x:18,y:52}, K:{x:55,y:52}, L:{x:42,y:62},
+      M:{x:50,y:62}, N:{x:40,y:55}, O:{x:55,y:58},
+    };
+    return [mza, positions[mza] || { x: 50, y: 50 }];
+  })
+);
 
 // ─── UI COMPARTIDA ────────────────────────────────────────────────────────────
 const inputStyle = {
