@@ -174,9 +174,10 @@ function firebaseReady() {
 async function loadLots() {
   if (firebaseReady()) {
     try {
-      const snap = await firebase.firestore().doc(FIRESTORE_DOC).get();
+      const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 6000));
+      const snap = await Promise.race([firebase.firestore().doc(FIRESTORE_DOC).get(), timeout]);
       if (snap.exists) return snap.data().lots || null;
-      return null; // documento aún vacío
+      return null;
     } catch(e) {
       console.warn("Firestore no disponible, usando localStorage:", e.message);
     }
