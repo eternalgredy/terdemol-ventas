@@ -721,23 +721,40 @@ function MapaView({ lots, onSaveLot }) {
           <div>
             <div style={{ borderRadius:16, overflow:"hidden", border:"2px solid #1e293b", background:"#0f172a" }}>
               <svg viewBox={`0 0 ${LOT_POLYGONS.w} ${LOT_POLYGONS.h}`} style={{ width:"100%", display:"block" }}>
-                {Object.entries(LOT_POLYGONS.polys).map(([lotId, pts]) => {
-                  const mza = lotId.split("-")[0];
-                  const status = lots[lotId]?.status || "disponible";
-                  const fillMap = { disponible:"#22c55e", reservado:"#f59e0b", vendido:"#ef4444" };
-                  const fill = fillMap[status] || "#22c55e";
-                  return (
-                    <polygon key={lotId} points={pts}
-                      fill={fill + "55"} stroke={fill} strokeWidth="1.5"
-                      style={{ cursor:"pointer", transition:"fill 0.15s" }}
-                      onClick={() => setActiveMza(mza)}
-                      onMouseEnter={e => e.target.setAttribute("fill", fill + "bb")}
-                      onMouseLeave={e => e.target.setAttribute("fill", fill + "55")}
-                    >
-                      <title>{lotId} — {status}</title>
-                    </polygon>
-                  );
-                })}
+                {(() => {
+                  const supMap = Object.fromEntries(Object.values(MANZANAS_INIT).flat().map(l => [l.id, l.sup]));
+                  return Object.entries(LOT_POLYGONS.polys).map(([lotId, pts]) => {
+                    const mza = lotId.split("-")[0];
+                    const status = lots[lotId]?.status || "disponible";
+                    const fillMap = { disponible:"#22c55e", reservado:"#f59e0b", vendido:"#ef4444" };
+                    const fill = fillMap[status] || "#22c55e";
+                    const pts2d = pts.split(" ").map(p => p.split(",").map(Number));
+                    const cx = pts2d.reduce((s,p) => s+p[0], 0) / pts2d.length;
+                    const cy = pts2d.reduce((s,p) => s+p[1], 0) / pts2d.length;
+                    const sup = supMap[lotId];
+                    const num = lotId.split("-")[1];
+                    return (
+                      <g key={lotId} style={{ cursor:"pointer" }} onClick={() => setActiveMza(mza)}>
+                        <polygon points={pts}
+                          fill={fill + "55"} stroke={fill} strokeWidth="1.5"
+                          style={{ transition:"fill 0.15s" }}
+                          onMouseEnter={e => e.target.setAttribute("fill", fill + "bb")}
+                          onMouseLeave={e => e.target.setAttribute("fill", fill + "55")}
+                        >
+                          <title>{lotId} — {sup} m² — {status}</title>
+                        </polygon>
+                        <text x={cx} y={cy - 3} textAnchor="middle" dominantBaseline="middle"
+                          stroke="#0f172a" strokeWidth="2" strokeLinejoin="round" paintOrder="stroke"
+                          style={{ fontSize:5.5, fontWeight:"bold", fill:"#fff", pointerEvents:"none" }}
+                        >{num}</text>
+                        <text x={cx} y={cy + 4.5} textAnchor="middle" dominantBaseline="middle"
+                          stroke="#0f172a" strokeWidth="2" strokeLinejoin="round" paintOrder="stroke"
+                          style={{ fontSize:4.5, fill:"#e2e8f0", pointerEvents:"none" }}
+                        >{sup}m²</text>
+                      </g>
+                    );
+                  });
+                })()}
                 {Object.keys(MANZANAS_INIT).map(mza => {
                   const mzaPolys = Object.entries(LOT_POLYGONS.polys).filter(([id]) => id.startsWith(mza + "-"));
                   if (!mzaPolys.length) return null;
@@ -746,8 +763,8 @@ function MapaView({ lots, onSaveLot }) {
                   const cy = allPts.reduce((s,p) => s+p[1], 0) / allPts.length;
                   return (
                     <text key={mza} x={cx} y={cy} textAnchor="middle" dominantBaseline="middle"
-                      stroke="#0f172a" strokeWidth="3" strokeLinejoin="round" paintOrder="stroke"
-                      style={{ fontSize:14, fontWeight:"bold", fill:"#fff", pointerEvents:"none" }}
+                      stroke="#0f172a" strokeWidth="4" strokeLinejoin="round" paintOrder="stroke"
+                      style={{ fontSize:18, fontWeight:"bold", fill:"#fff9", pointerEvents:"none" }}
                     >{mza}</text>
                   );
                 })}
